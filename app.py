@@ -2,12 +2,11 @@ from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 import csv, os
 
-app = Flask(__name__, static_folder="static")
-CORS(app)
+app = Flask(__name__, static_folder=".")
 
 @app.route("/")
 def index():
-    return send_from_directory("static", "index.html")
+    return send_from_directory(".", "index.html")
 
 @app.route("/api/logs")
 def get_logs():
