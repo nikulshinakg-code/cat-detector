@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cat Detector</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --bg2: #f5f5f3; --bg3: #efefec;
+  --text: #1a1a18; --text2: #6b6b67; --text3: #9b9b96;
+  --border: rgba(0,0,0,0.1); --border2: rgba(0,0,0,0.18);
+  --radius: 8px; --radius-lg: 12px;
+  --cat1: #FEF0E6; --cat1t: #7A3000; --cat1b: #F5A05A;
+  --cat2: #F1EFE8; --cat2t: #444441; --cat2b: #B4B2A9;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1a; --bg2: #252523; --bg3: #2e2e2b;
+    --text: #e8e8e2; --text2: #9b9b96; --text3: #6b6b67;
+    --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
+    --cat1: #3a1a00; --cat1t: #F5A05A; --cat1b: #C25A00;
+    --cat2: #2a2a28; --cat2t: #B4B2A9; --cat2b: #888780;
+  }
+}
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
+.app { max-width: 520px; margin: 0 auto; padding: 16px; }
+.card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 12px; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; }
+.header-title { font-size: 17px; font-weight: 500; }
+.header-sub { font-size: 12px; color: var(--text2); margin-top: 1px; }
+.header-actions { display: flex; gap: 8px; position: relative; }
+button {
+  font-family: inherit; font-size: 13px; cursor: pointer;
+  border: 0.5px solid var(--border2); border-radius: var(--radius);
+  background: var(--bg); color: var(--text2);
+  padding: 6px 12px; display: flex; align-items: center; gap: 5px;
+  transition: background 0.15s;
+}
+button:hover { background: var(--bg2); }
+button.icon-btn { width: 34px; height: 34px; padding: 0; justify-content: center; }
+.stats { display: flex; gap: 8px; padding: 0 12px 12px; }
+.stat { flex: 1; background: var(--bg2); border-radius: var(--radius); padding: 10px 12px; }
+.stat-label { font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+.stat-value { font-size: 22px; font-weight: 500; }
+.tabs { display: flex; gap: 8px; padding: 0 12px 12px; }
+.tab { flex: 1; justify-content: center; }
+.tab.active { background: var(--bg2); color: var(--text); font-weight: 500; border-color: var(--border2); }
+.section { display: none; }
+.section.visible { display: block; }
+.filters { display: flex; gap: 6px; padding: 0 12px 10px; flex-wrap: wrap; }
+.pill {
+  font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 20px;
+  border: 0.5px solid var(--border2); background: var(--bg); color: var(--text2);
+  cursor: pointer;
+}
+.pill.a-all { background: var(--bg2); color: var(--text); }
+.pill.a-cat1 { background: var(--cat1); color: var(--cat1t); border-color: var(--cat1b); }
+.pill.a-cat2 { background: var(--cat2); color: var(--cat2t); border-color: var(--cat2b); }
+.pill.a-nc { background: #FAEEDA; color: #633806; border-color: #EF9F27; }
+.status { font-size: 12px; color: var(--text3); padding: 0 12px 8px; min-height: 20px; }
+.date-header { padding: 5px 14px; font-size: 11px; font-weight: 500; color: var(--text2); background: var(--bg2); border-bottom: 0.5px solid var(--border); border-top: 0.5px solid var(--border); }
+.row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 0.5px solid var(--border); }
+.row:last-child { border-bottom: none; }
+.avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.row-name { font-weight: 500; font-size: 14px; }
+.row-time { font-size: 13px; color: var(--text2); font-family: monospace; margin-left: auto; }
+.empty { padding: 32px; text-align: center; color: var(--text2); font-size: 14px; }
+/* Chart */
+.chart-wrap { padding: 12px 16px 16px; }
+.chart-label { font-size: 12px; color: var(--text2); margin-bottom: 12px; }
+.chart-area { display: flex; align-items: flex-end; gap: 3px; height: 100px; padding-bottom: 20px; }
+.bar-col { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; }
+.bar-stack { display: flex; flex-direction: column-reverse; width: 100%; gap: 1px; }
+.bar-tick { font-size: 9px; color: var(--text3); margin-top: 4px; }
+.legend { display: flex; gap: 14px; margin-top: 10px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+/* Settings dropdown */
+.settings-panel {
+  display: none; position: absolute; right: 0; top: 40px; z-index: 100;
+  background: var(--bg); border: 0.5px solid var(--border2);
+  border-radius: var(--radius-lg); padding: 0 14px; width: 260px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+.settings-panel.open { display: block; }
+.s-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 0.5px solid var(--border); }
+.s-row:last-child { border-bottom: none; }
+.s-row input[type=text] { width: 100px; font-size: 13px; text-align: right; background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 4px 8px; color: var(--text); font-family: inherit; }
+.s-label { flex: 1; font-size: 13px; font-weight: 500; }
+.s-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.av-picker { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.av-opt { font-size: 19px; padding: 3px 5px; border-radius: 6px; border: 1.5px solid transparent; cursor: pointer; }
+.av-opt.sel { border-color: var(--border2); background: var(--bg2); }
+/* Toast */
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius-lg);
+  padding: 10px 16px; display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--text); transition: transform 0.3s ease;
+  pointer-events: none; white-space: nowrap; z-index: 1000;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="toast" id="toast">
+  <span id="toast-av" style="font-size:20px"></span>
+  <span id="toast-msg"></span>
+</div>
+
+<div class="app">
+  <div class="card">
+    <div class="header">
+      <div>
+        <div class="header-title">Cat Detector</div>
+        <div class="header-sub">feeding log</div>
+      </div>
+      <div class="header-actions">
+        <button onclick="refreshData()">↻ refresh</button>
+        <button class="icon-btn" onclick="toggleSettings()" aria-label="Settings">⚙️</button>
+        <div class="settings-panel" id="settings-panel">
+          <div class="s-row">
+            <div class="s-label">Cat 1 name</div>
+            <input type="text" id="in-cat1" value="Muffin" oninput="applyNames()">
+          </div>
+          <div class="s-row" style="flex-direction:column;align-items:flex-start">
+            <div class="s-sub">Cat 1 avatar</div>
+            <div class="av-picker" id="pk-cat1"></div>
+          </div>
+          <div class="s-row">
+            <div class="s-label">Cat 2 name</div>
+            <input type="text" id="in-cat2" value="Fred" oninput="applyNames()">
+          </div>
+          <div class="s-row" style="flex-direction:column;align-items:flex-start;border-bottom:none">
+            <div class="s-sub">Cat 2 avatar</div>
+            <div class="av-picker" id="pk-cat2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">today total</div>
+        <div class="stat-value" id="st-total">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label" id="lb-cat1" style="color:#7A3000">Muffin</div>
+        <div class="stat-value" style="color:#C25A00" id="st-cat1">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label" id="lb-cat2" style="color:#5F5E5A">Fred</div>
+        <div class="stat-value" style="color:#888780" id="st-cat2">—</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" id="tab-log" onclick="showTab('log')">Activity</button>
+      <button class="tab" id="tab-chart" onclick="showTab('chart')">Visuals</button>
+    </div>
+
+    <div id="sec-log" class="section visible">
+      <div class="filters">
+        <span class="pill a-all" id="f-all" onclick="setFilter('all')">all</span>
+        <span class="pill" id="f-cat1" onclick="setFilter('Cat 1')">Muffin</span>
+        <span class="pill" id="f-cat2" onclick="setFilter('Cat 2')">Fred</span>
+        <span class="pill" id="f-nc" onclick="setFilter('non-cat')">not a cat</span>
+      </div>
+      <div class="status" id="status"></div>
+      <div id="log-list"></div>
+    </div>
+
+    <div id="sec-chart" class="section">
+      <div class="chart-wrap">
+        <div class="chart-label">Feeding events by hour — today</div>
+        <div class="chart-area" id="chart-area"></div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#F5A05A"></div><span id="lg-cat1">Muffin</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#B4B2A9"></div><span id="lg-cat2">Fred</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const AVATARS = ["🐱","🐈","🐈‍⬛","😺","😸","😹","😻","🙀","😿","🐾"];
+const API_URL = "/api/logs";
+
+let catNames = {"Cat 1":"Muffin","Cat 2":"Fred","non-cat":"not a cat"};
+let catAvatars = {"Cat 1":"🐱","Cat 2":"🐈"};
+let allData = [], currentFilter = "all";
+let seenKeys = new Set(), toastTimer = null;
+
+function today() {
+  return new Date().toISOString().slice(0,10);
+}
+
+function showToast(av, msg) {
+  const t = document.getElementById("toast");
+  document.getElementById("toast-av").textContent = av;
+  document.getElementById("toast-msg").textContent = msg;
+  t.classList.add("show");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 4000);
+}
+
+function toggleSettings() {
+  document.getElementById("settings-panel").classList.toggle("open");
+}
+document.addEventListener("click", e => {
+  const p = document.getElementById("settings-panel");
+  if (!p.contains(e.target) && !e.target.closest(".icon-btn")) p.classList.remove("open");
+});
+
+function buildPickers() {
+  ["cat1","cat2"].forEach(id => {
+    const key = id === "cat1" ? "Cat 1" : "Cat 2";
+    document.getElementById("pk-"+id).innerHTML = AVATARS.map(a =>
+      `<span class="av-opt${catAvatars[key]===a?" sel":""}" onclick="setAv('${key}','${a}',this)">${a}</span>`
+    ).join("");
+  });
+}
+
+function setAv(key, em, el) {
+  catAvatars[key] = em;
+  const pid = key === "Cat 1" ? "pk-cat1" : "pk-cat2";
+  document.querySelectorAll("#"+pid+" .av-opt").forEach(e => e.classList.remove("sel"));
+  el.classList.add("sel");
+  renderList();
+}
+
+function applyNames() {
+  catNames["Cat 1"] = document.getElementById("in-cat1").value || "Cat 1";
+  catNames["Cat 2"] = document.getElementById("in-cat2").value || "Cat 2";
+  ["cat1","cat2"].forEach(id => {
+    const key = id === "cat1" ? "Cat 1" : "Cat 2";
+    document.getElementById("lb-"+id).textContent = catNames[key];
+    document.getElementById("f-"+id).textContent = catNames[key];
+    document.getElementById("lg-"+id).textContent = catNames[key];
+  });
+  renderList(); renderChart();
+}
+
+function showTab(t) {
+  ["log","chart"].forEach(id => {
+    document.getElementById("sec-"+id).classList.toggle("visible", id===t);
+    document.getElementById("tab-"+id).classList.toggle("active", id===t);
+  });
+  if (t === "chart") renderChart();
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  const map = {"all":"a-all","Cat 1":"a-cat1","Cat 2":"a-cat2","non-cat":"a-nc"};
+  ["all","cat1","cat2","nc"].forEach(id => document.getElementById("f-"+id).className = "pill");
+  const fmap = {"all":"f-all","Cat 1":"f-cat1","Cat 2":"f-cat2","non-cat":"f-nc"};
+  document.getElementById(fmap[f]).className = "pill " + map[f];
+  renderList();
+}
+
+function dateLabel(d) {
+  const t = today();
+  if (d === t) return "Today";
+  const y = new Date(t); y.setDate(y.getDate()-1);
+  if (d === y.toISOString().slice(0,10)) return "Yesterday";
+  return d;
+}
+
+function checkNew(data) {
+  data.forEach(r => {
+    if (r.subject === "non-cat") return;
+    const k = r.date+r.time+r.subject;
+    if (!seenKeys.has(k)) {
+      seenKeys.add(k);
+      setTimeout(() => showToast(catAvatars[r.subject], catNames[r.subject]+" ate at "+r.time), 800);
+    }
+  });
+}
+
+function sorted(data) {
+  return [...data].sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
+}
+
+function renderList() {
+  const base = sorted(allData);
+  const filtered = currentFilter === "all" ? base : base.filter(r => r.subject === currentFilter);
+  const el = document.getElementById("log-list");
+  if (!filtered.length) { el.innerHTML = '<div class="empty">no records</div>'; return; }
+  let lastDate = "", html = "";
+  filtered.forEach(r => {
+    const bgMap = {"Cat 1":"var(--cat1)","Cat 2":"var(--cat2)","non-cat":"#FAEEDA"};
+    const av = r.subject === "non-cat" ? "🚶" : catAvatars[r.subject];
+    if (r.date !== lastDate) {
+      lastDate = r.date;
+      html += `<div class="date-header">${dateLabel(r.date)}</div>`;
+    }
+    html += `<div class="row">
+      <div class="avatar" style="background:${bgMap[r.subject]}">${av}</div>
+      <div class="row-name">${catNames[r.subject]}</div>
+      <div class="row-time">${r.time}</div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function renderChart() {
+  const hours = Array.from({length:15},(_,i)=>i+6);
+  const counts = {};
+  hours.forEach(h => { counts[h] = {"Cat 1":0,"Cat 2":0}; });
+  allData.filter(r => r.date === today() && r.subject !== "non-cat").forEach(r => {
+    const h = parseInt(r.time.split(":")[0]);
+    if (counts[h]) counts[h][r.subject]++;
+  });
+  const maxVal = Math.max(1, ...hours.map(h => counts[h]["Cat 1"]+counts[h]["Cat 2"]));
+  const BAR = 76;
+  document.getElementById("chart-area").innerHTML = hours.map(h => {
+    const c1 = counts[h]["Cat 1"], c2 = counts[h]["Cat 2"];
+    const h1 = Math.round((c1/maxVal)*BAR), h2 = Math.round((c2/maxVal)*BAR);
+    const isEmpty = !c1 && !c2;
+    const bars = isEmpty
+      ? `<div style="width:100%;height:2px;background:var(--border);border-radius:1px;margin-top:${BAR-2}px"></div>`
+      : (c2 ? `<div style="width:100%;height:${h2}px;background:#B4B2A9;border-radius:2px 2px 0 0"></div>` : "")
+        + (c1 ? `<div style="width:100%;height:${h1}px;background:#F5A05A;border-radius:2px 2px 0 0"></div>` : "");
+    return `<div class="bar-col">
+      <div class="bar-stack" style="height:${BAR}px">${bars}</div>
+      <div class="bar-tick">${h}</div>
+    </div>`;
+  }).join("");
+}
+
+function updateStats() {
+  const t = allData.filter(r => r.date === today());
+  document.getElementById("st-total").textContent = t.length;
+  document.getElementById("st-cat1").textContent = t.filter(r => r.subject==="Cat 1").length;
+  document.getElementById("st-cat2").textContent = t.filter(r => r.subject==="Cat 2").length;
+}
+
+async function refreshData() {
+  document.getElementById("status").textContent = "loading...";
+  try {
+    const res = await fetch(API_URL);
+    allData = await res.json();
+    document.getElementById("status").textContent = "";
+    checkNew(allData);
+  } catch(e) {
+    document.getElementById("status").textContent = "could not connect to server";
+  }
+  updateStats(); renderList(); renderChart();
+}
+
+buildPickers();
+refreshData();
+setInterval(refreshData, 30000);
+</script>
+</body>
+</html>
