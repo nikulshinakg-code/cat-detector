@@ -20,33 +20,58 @@ def get_logs():
                     logs.append({
                         "date": row[0].strip(),
                         "time": row[1].strip(),
-                        "subject": row[2].strip()
+                        "subject": row[2].strip(),
+                        "photo": row[3].strip() if len(row) >= 4 else ""
                     })
     except FileNotFoundError:
         return jsonify([])
     return jsonify(logs)
 
+@app.route("/photos/<path:filename>")
+def serve_photo(filename):
+    return send_from_directory("photos", filename)
+
 @app.route("/api/event", methods=["POST"])
 def add_event():
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "No JSON data provided"}), 400
-   
-    date = data.get("date", "").strip()
-    time = data.get("time", "").strip()
-    subject = data.get("subject", "").strip()
-   
+    # Check if request has custom headers (sent by ESP32-CAM raw photo upload)
+    if request.headers.get("X-Event-Subject"):
+        date = request.headers.get("X-Event-Date", "").strip()
+        time = request.headers.get("X-Event-Time", "").strip()
+        subject = request.headers.get("X-Event-Subject", "").strip()
+        
+        photo_logged = ""
+        if request.data:
+            os.makedirs("photos", exist_ok=True)
+            safe_time = time.replace(":", "-")
+            photo_filename = f"{date}_{safe_time}_{subject}.jpg"
+            filepath = os.path.join("photos", photo_filename)
+            try:
+                with open(filepath, "wb") as f:
+                    f.write(request.data)
+                photo_logged = f"photos/{photo_filename}"
+            except Exception as e:
+                return jsonify({"error": f"Failed to save image: {str(e)}"}), 500
+    else:
+        # Fallback to standard JSON payload
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+        
+        date = data.get("date", "").strip()
+        time = data.get("time", "").strip()
+        subject = data.get("subject", "").strip()
+        photo_logged = ""
+        
     if not date or not time or not subject:
         return jsonify({"error": "Missing required fields (date, time, subject)"}), 400
-       
+        
     csv_path = os.environ.get("CSV_PATH", "log.csv")
     try:
         with open(csv_path, mode='a', encoding='utf-8') as f:
-            # Format according to our CSV (date, time, subject with spaces after commas)
-            f.write(f"{date}, {time}, {subject}\n")
+            f.write(f"{date}, {time}, {subject}, {photo_logged}\n")
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-       
+        
     return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
