@@ -123,7 +123,7 @@ button.icon-btn { width: 34px; height: 34px; padding: 0; justify-content: center
         <div class="settings-panel" id="settings-panel">
           <div class="s-row">
             <div class="s-label">Cat 1 name</div>
-            <input type="text" id="in-cat1" value="Muffin" oninput="applyNames()">
+            <input type="text" id="in-cat1" value="Fred" oninput="applyNames()">
           </div>
           <div class="s-row" style="flex-direction:column;align-items:flex-start">
             <div class="s-sub">Cat 1 avatar</div>
@@ -131,7 +131,7 @@ button.icon-btn { width: 34px; height: 34px; padding: 0; justify-content: center
           </div>
           <div class="s-row">
             <div class="s-label">Cat 2 name</div>
-            <input type="text" id="in-cat2" value="Fred" oninput="applyNames()">
+            <input type="text" id="in-cat2" value="Muffin" oninput="applyNames()">
           </div>
           <div class="s-row" style="flex-direction:column;align-items:flex-start;border-bottom:none">
             <div class="s-sub">Cat 2 avatar</div>
@@ -147,11 +147,11 @@ button.icon-btn { width: 34px; height: 34px; padding: 0; justify-content: center
         <div class="stat-value" id="st-total">—</div>
       </div>
       <div class="stat">
-        <div class="stat-label" id="lb-cat1" style="color:#7A3000">Muffin</div>
+        <div class="stat-label" id="lb-cat1" style="color:#7A3000">Fred</div>
         <div class="stat-value" style="color:#C25A00" id="st-cat1">—</div>
       </div>
       <div class="stat">
-        <div class="stat-label" id="lb-cat2" style="color:#5F5E5A">Fred</div>
+        <div class="stat-label" id="lb-cat2" style="color:#5F5E5A">Muffin</div>
         <div class="stat-value" style="color:#888780" id="st-cat2">—</div>
       </div>
     </div>
@@ -164,8 +164,8 @@ button.icon-btn { width: 34px; height: 34px; padding: 0; justify-content: center
     <div id="sec-log" class="section visible">
       <div class="filters">
         <span class="pill a-all" id="f-all" onclick="setFilter('all')">all</span>
-        <span class="pill" id="f-cat1" onclick="setFilter('Cat 1')">Muffin</span>
-        <span class="pill" id="f-cat2" onclick="setFilter('Cat 2')">Fred</span>
+        <span class="pill" id="f-cat1" onclick="setFilter('Fred')">Fred</span>
+        <span class="pill" id="f-cat2" onclick="setFilter('Muffin')">Muffin</span>
         <span class="pill" id="f-nc" onclick="setFilter('non-cat')">not a cat</span>
       </div>
       <div class="status" id="status"></div>
@@ -177,8 +177,8 @@ button.icon-btn { width: 34px; height: 34px; padding: 0; justify-content: center
         <div class="chart-label">Feeding events by hour — today</div>
         <div class="chart-area" id="chart-area"></div>
         <div class="legend">
-          <div class="legend-item"><div class="legend-dot" style="background:#F5A05A"></div><span id="lg-cat1">Muffin</span></div>
-          <div class="legend-item"><div class="legend-dot" style="background:#B4B2A9"></div><span id="lg-cat2">Fred</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#F5A05A"></div><span id="lg-cat1">Fred</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#B4B2A9"></div><span id="lg-cat2">Muffin</span></div>
         </div>
       </div>
     </div>
@@ -189,8 +189,8 @@ button.icon-btn { width: 34px; height: 34px; padding: 0; justify-content: center
 const AVATARS = ["🐱","🐈","🐈‍⬛","😺","😸","😹","😻","🙀","😿","🐾"];
 const API_URL = "/api/logs";
 
-let catNames = {"Cat 1":"Muffin","Cat 2":"Fred","non-cat":"not a cat"};
-let catAvatars = {"Cat 1":"🐱","Cat 2":"🐈"};
+let catNames = {"Fred":"Fred","Muffin":"Muffin","non-cat":"not a cat"};
+let catAvatars = {"Fred":"🐱","Muffin":"🐈"};
 let allData = [], currentFilter = "all";
 let seenKeys = new Set(), toastTimer = null;
 
@@ -217,7 +217,7 @@ document.addEventListener("click", e => {
 
 function buildPickers() {
   ["cat1","cat2"].forEach(id => {
-    const key = id === "cat1" ? "Cat 1" : "Cat 2";
+    const key = id === "cat1" ? "Fred" : "Muffin";
     document.getElementById("pk-"+id).innerHTML = AVATARS.map(a =>
       `<span class="av-opt${catAvatars[key]===a?" sel":""}" onclick="setAv('${key}','${a}',this)">${a}</span>`
     ).join("");
@@ -226,17 +226,17 @@ function buildPickers() {
 
 function setAv(key, em, el) {
   catAvatars[key] = em;
-  const pid = key === "Cat 1" ? "pk-cat1" : "pk-cat2";
+  const pid = key === "Fred" ? "pk-cat1" : "pk-cat2";
   document.querySelectorAll("#"+pid+" .av-opt").forEach(e => e.classList.remove("sel"));
   el.classList.add("sel");
   renderList();
 }
 
 function applyNames() {
-  catNames["Cat 1"] = document.getElementById("in-cat1").value || "Cat 1";
-  catNames["Cat 2"] = document.getElementById("in-cat2").value || "Cat 2";
+  catNames["Fred"] = document.getElementById("in-cat1").value || "Fred";
+  catNames["Muffin"] = document.getElementById("in-cat2").value || "Muffin";
   ["cat1","cat2"].forEach(id => {
-    const key = id === "cat1" ? "Cat 1" : "Cat 2";
+    const key = id === "cat1" ? "Fred" : "Muffin";
     document.getElementById("lb-"+id).textContent = catNames[key];
     document.getElementById("f-"+id).textContent = catNames[key];
     document.getElementById("lg-"+id).textContent = catNames[key];
@@ -254,9 +254,9 @@ function showTab(t) {
 
 function setFilter(f) {
   currentFilter = f;
-  const map = {"all":"a-all","Cat 1":"a-cat1","Cat 2":"a-cat2","non-cat":"a-nc"};
+  const map = {"all":"a-all","Fred":"a-cat1","Muffin":"a-cat2","non-cat":"a-nc"};
   ["all","cat1","cat2","nc"].forEach(id => document.getElementById("f-"+id).className = "pill");
-  const fmap = {"all":"f-all","Cat 1":"f-cat1","Cat 2":"f-cat2","non-cat":"f-nc"};
+  const fmap = {"all":"f-all","Fred":"f-cat1","Muffin":"f-cat2","non-cat":"f-nc"};
   document.getElementById(fmap[f]).className = "pill " + map[f];
   renderList();
 }
@@ -291,15 +291,19 @@ function renderList() {
   if (!filtered.length) { el.innerHTML = '<div class="empty">no records</div>'; return; }
   let lastDate = "", html = "";
   filtered.forEach(r => {
-    const bgMap = {"Cat 1":"var(--cat1)","Cat 2":"var(--cat2)","non-cat":"#FAEEDA"};
-    const av = r.subject === "non-cat" ? "🚶" : catAvatars[r.subject];
+    const bgMap = {"Fred":"var(--cat1)","Muffin":"var(--cat2)","non-cat":"#FAEEDA"};
+    const av = r.subject === "non-cat" ? "🚶" : (catAvatars[r.subject] || "🐱");
     if (r.date !== lastDate) {
       lastDate = r.date;
       html += `<div class="date-header">${dateLabel(r.date)}</div>`;
     }
+    let photoLink = "";
+    if (r.photo) {
+      photoLink = ` <a href="/${r.photo}" target="_blank" style="margin-left: 10px; font-size: 12px; color: #007aff; text-decoration: none; border-bottom: 0.5px dashed #007aff;">🖼️ view photo</a>`;
+    }
     html += `<div class="row">
       <div class="avatar" style="background:${bgMap[r.subject]}">${av}</div>
-      <div class="row-name">${catNames[r.subject]}</div>
+      <div class="row-name">${catNames[r.subject]}${photoLink}</div>
       <div class="row-time">${r.time}</div>
     </div>`;
   });
@@ -309,15 +313,15 @@ function renderList() {
 function renderChart() {
   const hours = Array.from({length:15},(_,i)=>i+6);
   const counts = {};
-  hours.forEach(h => { counts[h] = {"Cat 1":0,"Cat 2":0}; });
+  hours.forEach(h => { counts[h] = {"Fred":0,"Muffin":0}; });
   allData.filter(r => r.date === today() && r.subject !== "non-cat").forEach(r => {
     const h = parseInt(r.time.split(":")[0]);
-    if (counts[h]) counts[h][r.subject]++;
+    if (counts[h] && counts[h][r.subject] !== undefined) counts[h][r.subject]++;
   });
-  const maxVal = Math.max(1, ...hours.map(h => counts[h]["Cat 1"]+counts[h]["Cat 2"]));
+  const maxVal = Math.max(1, ...hours.map(h => (counts[h]["Fred"] || 0)+(counts[h]["Muffin"] || 0)));
   const BAR = 76;
   document.getElementById("chart-area").innerHTML = hours.map(h => {
-    const c1 = counts[h]["Cat 1"], c2 = counts[h]["Cat 2"];
+    const c1 = counts[h]["Fred"] || 0, c2 = counts[h]["Muffin"] || 0;
     const h1 = Math.round((c1/maxVal)*BAR), h2 = Math.round((c2/maxVal)*BAR);
     const isEmpty = !c1 && !c2;
     const bars = isEmpty
@@ -334,15 +338,19 @@ function renderChart() {
 function updateStats() {
   const t = allData.filter(r => r.date === today());
   document.getElementById("st-total").textContent = t.length;
-  document.getElementById("st-cat1").textContent = t.filter(r => r.subject==="Cat 1").length;
-  document.getElementById("st-cat2").textContent = t.filter(r => r.subject==="Cat 2").length;
+  document.getElementById("st-cat1").textContent = t.filter(r => r.subject==="Fred").length;
+  document.getElementById("st-cat2").textContent = t.filter(r => r.subject==="Muffin").length;
 }
 
 async function refreshData() {
   document.getElementById("status").textContent = "loading...";
   try {
     const res = await fetch(API_URL);
-    allData = await res.json();
+    const rawData = await res.json();
+    allData = rawData.map(r => ({
+      ...r,
+      subject: r.subject === "Cat 1" ? "Fred" : (r.subject === "Cat 2" ? "Muffin" : r.subject)
+    }));
     document.getElementById("status").textContent = "";
     checkNew(allData);
   } catch(e) {
@@ -353,7 +361,7 @@ async function refreshData() {
 
 buildPickers();
 refreshData();
-setInterval(refreshData, 10000);
+setInterval(refreshData, 30000);
 </script>
 </body>
 </html>
